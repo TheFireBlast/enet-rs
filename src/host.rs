@@ -2,6 +2,7 @@ use std::{marker::PhantomData, mem::MaybeUninit, sync::Arc, time::Duration};
 
 use enet_sys::{
     enet_host_bandwidth_limit, enet_host_channel_limit, enet_host_check_events, enet_host_connect,
+    enet_host_compress_with_range_coder,
     enet_host_destroy, enet_host_flush, enet_host_service, ENetEvent, ENetHost, ENetPeer,
     ENET_PROTOCOL_MAXIMUM_CHANNEL_COUNT,
 };
@@ -281,6 +282,25 @@ impl<T> Host<T> {
         Ok((Peer::new_mut(unsafe { &mut *res }), unsafe {
             self.peer_id(res)
         }))
+    }
+
+    /// Initiates a connection to a foreign host.
+    ///
+    /// The connection will not be done until a `Event::Connected` for this peer
+    /// was received.
+    ///
+    /// `channel_count` specifies how many channels to allocate for this peer.
+    /// `user_data` is a user-specified value that can be chosen arbitrarily.
+    pub fn compress_with_range_coder(
+        &mut self
+    ) -> Result<(), Error> {
+        let ret = unsafe { enet_host_compress_with_range_coder(self.inner) };
+
+        if ret != 0 {
+            return Err(Error(ret));
+        }
+
+        Ok(())
     }
 }
 
