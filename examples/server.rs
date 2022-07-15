@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
             .context("service failed")?
         {
             match event.kind() {
-                &EventKind::Connect => println!("new connection!"),
+                &EventKind::Connect { .. } => println!("new connection!"),
                 &EventKind::Disconnect { .. } => println!("disconnect!"),
                 &EventKind::Receive {
                     ref channel_id,

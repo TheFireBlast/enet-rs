@@ -26,7 +26,10 @@ pub struct Event<'a, T> {
 #[derive(Debug)]
 pub enum EventKind {
     /// Peer has connected.
-    Connect,
+    Connect{
+        /// The data associated with this event.
+        data: u32,
+    },
     /// Peer has disconnected.
     //
     /// The data of the peer (i.e. `Peer::data`) will be dropped when the received `Event` is dropped.
@@ -52,7 +55,9 @@ impl<'a, T> Event<'a, T> {
         let peer = unsafe { Peer::new_mut(&mut *event_sys.peer) };
         let peer_id = unsafe { host.peer_id(event_sys.peer) };
         let kind = match event_sys.type_ {
-            _ENetEventType_ENET_EVENT_TYPE_CONNECT => EventKind::Connect,
+            _ENetEventType_ENET_EVENT_TYPE_CONNECT => EventKind::Connect {
+                data: event_sys.data,
+            },
             _ENetEventType_ENET_EVENT_TYPE_DISCONNECT => EventKind::Disconnect {
                 data: event_sys.data,
             },
@@ -101,7 +106,7 @@ impl<'a, T> Event<'a, T> {
         // As the `Drop` implementation will then do nothing, we need to call cleanup_after_disconnect before we do the swap.
         self.cleanup_after_disconnect();
 
-        let mut kind = EventKind::Connect;
+        let mut kind = EventKind::Connect { data: 0 };
         std::mem::swap(&mut kind, &mut self.kind);
         // No need to run the drop implementation.
         std::mem::forget(self);
@@ -112,7 +117,7 @@ impl<'a, T> Event<'a, T> {
     fn cleanup_after_disconnect(&mut self) {
         match self.kind {
             EventKind::Disconnect { .. } => self.peer.cleanup_after_disconnect(),
-            EventKind::Connect | EventKind::Receive { .. } => {}
+            EventKind::Connect { .. } | EventKind::Receive { .. } => {}
         }
     }
 }
